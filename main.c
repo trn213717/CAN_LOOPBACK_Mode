@@ -55,6 +55,8 @@ static void MX_USART2_UART_Init(void);
 static void MX_CAN_Init(void);
 /* USER CODE BEGIN PFP */
 void CAN_Tx(void);
+void CAN_Rx(void);
+void CAN_Filter_Config(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,6 +98,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_CAN_Init();
+  CAN_Filter_Config();
   /* USER CODE BEGIN 2 */
   if(HAL_CAN_Start(&hcan) != HAL_OK){
 	  Error_Handler();
@@ -104,6 +107,7 @@ int main(void)
 
 
   CAN_Tx();
+  CAN_Rx();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -302,6 +306,50 @@ void CAN_Tx(void){
 
 
   }
+void CAN_Rx(void){
+
+
+	CAN_RxHeaderTypeDef RxHeader;
+	uint8_t rcvd_msg[5];
+	char msg[50];
+
+	while( ! HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0));
+
+
+	if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader , rcvd_msg) != HAL_OK){
+
+		Error_Handler();
+	}
+sprintf(msg,"Message Received: %s \r\n", rcvd_msg);
+HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 100);
+
+
+
+
+}
+
+void CAN_Filter_Config(void){
+	CAN_FilterTypeDef can1_filter_init;
+	can1_filter_init.FilterActivation = ENABLE;
+	can1_filter_init.FilterBank = 0;
+	can1_filter_init.FilterFIFOAssignment = CAN_RX_FIFO0;
+	can1_filter_init.FilterIdHigh = 0x0000;
+	can1_filter_init.FilterIdLow = 0x0000;
+	can1_filter_init.FilterMaskIdHigh = 0x0000;
+	can1_filter_init.FilterMaskIdLow = 0x0000;
+	can1_filter_init.FilterMode  = CAN_FILTERMODE_IDMASK;
+	can1_filter_init.FilterScale = CAN_FILTERSCALE_32BIT;
+
+	if(HAL_CAN_ConfigFilter(&hcan, &can1_filter_init) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+
+
+
+
+}
 /* USER CODE END 4 */
 
 /**
